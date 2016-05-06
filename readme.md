@@ -37,7 +37,7 @@ watch('/path/to/directory', (filePath) => {
 
   // Skip if the last change within the delta time was the same.
   let now = Date.now()
-  if (filePath === last.fileName && now - last.timestamp < delta) {
+  if (filePath === last.filePath && now - last.timestamp < delta) {
     return
   }
 
