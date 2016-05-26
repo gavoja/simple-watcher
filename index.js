@@ -10,7 +10,10 @@ let watchFolder = (workingDir, recursive, callback) => {
   let options = { persistent: true, recursive: recursive }
 
   let w = fs.watch(workingDir, options, (event, fileName) => {
-    callback(path.join(workingDir, fileName))
+    // On Windows it may actually be empty.
+    if (fileName) {
+      callback(path.join(workingDir, fileName))
+    }
   })
 
   w.on('error', (e) => {
