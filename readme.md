@@ -10,41 +10,21 @@ Features:
 * Dead simple and dead lightweight.
 * No dependencies.
 * Leverages the `recursive` options on OS X and Windows; uses a fallback for other platforms.
-* Does not care about Windows reporting multiple changes for one file (a simple workaround for this below).
-
+* Takes care of WinAPI's `ReadDirectoryChangesW` [double reporting](http://stackoverflow.com/questions/14036449/c-winapi-readdirectorychangesw-receiving-double-notifications).
 
 ## Usage
 
-Basic example:
-
 ```JavaScript
 const watch = require('simple-watcher')
 
+/**
+ * Recursively watches for directory changes.
+ * @param {string} workingDir - Directory to watch.
+ * @param {function} callback - Triggered on change.
+ * @param {number} tolerance - Interval in which multiple changes to the same file
+ *                             on Windows will be treated as one; default is 200ms.
+ */
 watch('/path/to/directory', (filePath) => {
-  console.log(`Changed: ${filePath}`)
-})
-```
-
-WinAPI's `ReadDirectoryChangesW` double reporting fix:
-
-```JavaScript
-const watch = require('simple-watcher')
-
-let last = { filePath: null, timestamp: null }
-let delta = 300 // Adjust if needed.
-
-watch('/path/to/directory', (filePath) => {
-
-  // Skip if the last change within the delta time was the same.
-  let now = Date.now()
-  if (filePath === last.filePath && now - last.timestamp < delta) {
-    return
-  }
-
-  // Save the change.
-  last.filePath = filePath
-  last.timestamp = now
-
   console.log(`Changed: ${filePath}`)
 })
 ```

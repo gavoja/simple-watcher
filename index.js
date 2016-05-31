@@ -3,17 +3,30 @@
 const fs = require('fs')
 const path = require('path')
 
+const TOLERANCE = 200
 const PLATFORMS = ['win32', 'darwin']
 
 // OS watcher.
-let watchFolder = (workingDir, recursive, callback) => {
+let watchFolder = (workingDir, recursive, tolerance, callback) => {
   let options = { persistent: true, recursive: recursive }
+  let last = { filePath: null, timestamp: null }
 
   let w = fs.watch(workingDir, options, (event, fileName) => {
-    // On Windows it may actually be empty.
-    if (fileName) {
-      callback(path.join(workingDir, fileName))
+    // On Windows fileName may actually be empty.
+    let filePath = fileName ? path.join(workingDir, fileName) : workingDir
+
+    // Eliminate double reporting.
+    if (tolerance) {
+      let now = Date.now()
+      if (filePath === last.filePath && now - last.timestamp < tolerance) {
+        return
+      }
+
+      last.filePath = filePath
+      last.timestamp = now
     }
+
+    callback(filePath)
   })
 
   w.on('error', (e) => {
@@ -41,15 +54,19 @@ let watchFolderFallback = (parent, callback) => {
   }
 }
 
-let watch = (workingDir, callback) => {
+let watch = (workingDir, callback, tolerance = TOLERANCE) => {
   workingDir = path.resolve(workingDir)
 
-  let cache = {}
+  // Enable tolerance only for Windows.
+  tolerance = process.platform === 'win32' ? tolerance : 0
 
+  // Use recursive flag if natively available.
   if (PLATFORMS.indexOf(process.platform) !== -1) {
-    return watchFolder(workingDir, true, callback)
+    return watchFolder(workingDir, true, tolerance, callback)
   }
 
+  // Attach handlers for each folder recursively.
+  let cache = {}
   watchFolderFallback(workingDir, (localPath) => {
     fs.stat(localPath, (err, stat) => {
       // Delete cache entry.
@@ -61,7 +78,7 @@ let watch = (workingDir, callback) => {
       // Add new handler for new directory and save in cache.
       if (stat.isDirectory() && !cache[localPath]) {
         cache[localPath] = true
-        watchFolder(localPath, false, callback)
+        watchFolder(localPath, false, tolerance, callback)
       }
     })
 
