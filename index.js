@@ -54,9 +54,11 @@ let watchFolderFallback = (parent, callback) => {
   }
 }
 
-let watch = (workingDir, callback, tolerance = TOLERANCE) => {
+let watch = (workingDir, callback, tolerance) => {
   workingDir = path.resolve(workingDir)
 
+  // Set the default tolerance value.
+  tolerance = tolerance === undefined ? TOLERANCE : tolerance
   // Enable tolerance only for Windows.
   tolerance = process.platform === 'win32' ? tolerance : 0
 
