@@ -9,7 +9,7 @@ const PLATFORMS = ['win32', 'darwin']
 // OS watcher.
 let watchFolder = (workingDir, recursive, tolerance, callback) => {
   let options = { persistent: true, recursive: recursive }
-  let last = { filePath: null, timestamp: -1 }
+  let last = { filePath: null, timestamp: 0 }
 
   let w = fs.watch(workingDir, options, (event, fileName) => {
     // On Windows fileName may actually be empty.
@@ -22,16 +22,17 @@ let watchFolder = (workingDir, recursive, tolerance, callback) => {
 
     fs.stat(filePath, (err, stat) => {
       // If error, the file was likely deleted.
-      let timestamp = err ? -1 : (new Date(stat.mtime)).getTime()
-      let timePassed = timestamp - last.timestamp < tolerance || timestamp === -1
-      let fileMatches = filePath === last.FilePath
-
-      if (fileMatches && timePassed) {
-        callback(filePath)
-      }
-
+      let timestamp = err ? 0 : (new Date(stat.mtime)).getTime()
+      let ready = err || timestamp - last.timestamp >= tolerance
+      let fileMatches = filePath === last.filePath
       last.filePath = filePath
       last.timestamp = timestamp
+
+      if (fileMatches && !ready) {
+        return
+      }
+
+      callback(filePath)
     })
   })
 
