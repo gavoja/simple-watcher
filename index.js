@@ -17,13 +17,15 @@ let watchFolder = (workingDir, recursive, tolerance, callback) => {
 
     // Eliminate double reporting.
     if (tolerance) {
-      let now = Date.now()
-      if (filePath === last.filePath && now - last.timestamp < tolerance) {
+      // Compare last modified time.
+      let stat = fs.statSync(filePath)
+      let timestamp = (new Date(stat.mtime)).getTime()
+      if (filePath === last.filePath && timestamp - last.timestamp < tolerance) {
         return
       }
 
       last.filePath = filePath
-      last.timestamp = now
+      last.timestamp = timestamp
     }
 
     callback(filePath)
