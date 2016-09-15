@@ -40,7 +40,7 @@ let watchFolder = (workingDir, recursive, tolerance, callback) => {
   })
 }
 
-let watchFolderFallback = (parent, callback) => {
+let watchFolderFallback = (parent, tolerance, callback) => {
   // This code is synchronous to be able to tell when it actually finishes.
   try {
     // Skip if not a directory.
@@ -48,12 +48,12 @@ let watchFolderFallback = (parent, callback) => {
       return
     }
 
-    watchFolder(parent, false, callback)
+    watchFolder(parent, false, tolerance, callback)
 
     // Iterate over list of children.
     fs.readdirSync(parent).forEach((child) => {
       child = path.resolve(parent, child)
-      watchFolderFallback(child, callback)
+      watchFolderFallback(child, tolerance, callback)
     })
   } catch (err) {
     console.error(err)
@@ -75,7 +75,7 @@ let watch = (workingDir, callback, tolerance) => {
 
   // Attach handlers for each folder recursively.
   let cache = {}
-  watchFolderFallback(workingDir, (localPath) => {
+  watchFolderFallback(workingDir, tolerance, (localPath) => {
     fs.stat(localPath, (err, stat) => {
       // Delete cache entry.
       if (err) {
