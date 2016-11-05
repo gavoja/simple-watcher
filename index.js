@@ -74,7 +74,6 @@ let watch = (workingDir, callback) => {
 
 let main = (workingDir, callback, interval) => {
   interval = interval !== undefined ? interval : INTERVAL
-  console.log(1)
   // Enqueue items on change.
   let queue = []
   watch(workingDir, (filePath) => {
