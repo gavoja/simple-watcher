@@ -2,6 +2,6 @@
 
 const watch = require('./index')
 
-watch(process.argv[2], (fileName) => {
-  console.log(`Changed: ${fileName}`)
+watch(process.argv[2], (files) => {
+  console.log(files)
 })

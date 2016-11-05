@@ -3,37 +3,18 @@
 const fs = require('fs')
 const path = require('path')
 
-const TOLERANCE = 200
 const PLATFORMS = ['win32', 'darwin']
+const INTERVAL = 300
 
 // OS watcher.
-let watchFolder = (workingDir, recursive, tolerance, callback) => {
+let watchFolder = (workingDir, recursive, callback) => {
   let options = { persistent: true, recursive: recursive }
-  let last = { filePath: null, timestamp: 0 }
 
   let w = fs.watch(workingDir, options, (event, fileName) => {
     // On Windows fileName may actually be empty.
     // In such case assume this is the working dir change.
     let filePath = fileName ? path.join(workingDir, fileName) : workingDir
-
-    if (!tolerance) {
-      return callback(filePath)
-    }
-
-    fs.stat(filePath, (err, stat) => {
-      // If error, the file was likely deleted.
-      let timestamp = err ? 0 : (new Date(stat.mtime)).getTime()
-      let ready = err || timestamp - last.timestamp >= tolerance
-      let fileMatches = filePath === last.filePath
-      last.filePath = filePath
-      last.timestamp = timestamp
-
-      if (fileMatches && !ready) {
-        return
-      }
-
-      callback(filePath)
-    })
+    callback(filePath)
   })
 
   w.on('error', (e) => {
@@ -41,7 +22,8 @@ let watchFolder = (workingDir, recursive, tolerance, callback) => {
   })
 }
 
-let watchFolderFallback = (parent, tolerance, callback) => {
+// Recursive fallback handler.
+let watchFolderFallback = (parent, callback) => {
   // This code is synchronous to be able to tell when it actually finishes.
   try {
     // Skip if not a directory.
@@ -49,34 +31,29 @@ let watchFolderFallback = (parent, tolerance, callback) => {
       return
     }
 
-    watchFolder(parent, false, tolerance, callback)
+    watchFolder(parent, false, callback)
 
     // Iterate over list of children.
     fs.readdirSync(parent).forEach((child) => {
       child = path.resolve(parent, child)
-      watchFolderFallback(child, tolerance, callback)
+      watchFolderFallback(child, callback)
     })
   } catch (err) {
     console.error(err)
   }
 }
 
-let watch = (workingDir, callback, tolerance) => {
+let watch = (workingDir, callback) => {
   workingDir = path.resolve(workingDir)
-
-  // Set the default tolerance value.
-  tolerance = tolerance === undefined ? TOLERANCE : tolerance
-  // Enable tolerance only for Windows.
-  tolerance = process.platform === 'win32' ? tolerance : 0
 
   // Use recursive flag if natively available.
   if (PLATFORMS.indexOf(process.platform) !== -1) {
-    return watchFolder(workingDir, true, tolerance, callback)
+    return watchFolder(workingDir, true, callback)
   }
 
   // Attach handlers for each folder recursively.
   let cache = {}
-  watchFolderFallback(workingDir, tolerance, (localPath) => {
+  watchFolderFallback(workingDir, (localPath) => {
     fs.stat(localPath, (err, stat) => {
       // Delete cache entry.
       if (err) {
@@ -87,7 +64,7 @@ let watch = (workingDir, callback, tolerance) => {
       // Add new handler for new directory and save in cache.
       if (stat.isDirectory() && !cache[localPath]) {
         cache[localPath] = true
-        watchFolder(localPath, false, tolerance, callback)
+        watchFolder(localPath, false, callback)
       }
     })
 
@@ -95,4 +72,27 @@ let watch = (workingDir, callback, tolerance) => {
   })
 }
 
-module.exports = watch
+let main = (workingDir, callback, interval) => {
+  interval = interval !== undefined ? interval : INTERVAL
+  console.log(1)
+  // Enqueue items on change.
+  let queue = []
+  watch(workingDir, (filePath) => {
+    queue.push(filePath)
+  })
+
+  // Start the interval.
+  setInterval(() => {
+    // Dequeue paths and store them as dictionary keys.
+    let dict = {}
+    while (queue.length) {
+      dict[queue.pop()] = true
+    }
+
+    // Run callback with unique paths.
+    let unique = Object.keys(dict)
+    unique.length && callback(unique)
+  }, interval)
+}
+
+module.exports = main
