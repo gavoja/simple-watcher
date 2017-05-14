@@ -8,8 +8,8 @@ const PLATFORMS = ['win32', 'darwin']
 
 // OS watcher.
 let watchFolder = (workingDir, recursive, tolerance, callback) => {
-  let options = { persistent: true, recursive: recursive }
-  let last = { filePath: null, timestamp: 0 }
+  let options = {persistent: true, recursive: recursive}
+  let last = {filePath: null, timestamp: 0}
 
   let w = fs.watch(workingDir, options, (event, fileName) => {
     // On Windows fileName may actually be empty.
@@ -69,14 +69,14 @@ let watch = (workingDir, callback, tolerance) => {
   // Enable tolerance only for Windows.
   tolerance = process.platform === 'win32' ? tolerance : 0
 
-  // Use recursive flag if natively available.
+  // Use recursive flag when supported.
   if (PLATFORMS.indexOf(process.platform) !== -1) {
     return watchFolder(workingDir, true, tolerance, callback)
   }
 
   // Attach handlers for each folder recursively.
   let cache = {}
-  watchFolderFallback(workingDir, tolerance, (localPath) => {
+  watchFolderFallback(workingDir, tolerance, localPath => {
     fs.stat(localPath, (err, stat) => {
       // Delete cache entry.
       if (err) {
@@ -96,7 +96,7 @@ let watch = (workingDir, callback, tolerance) => {
 }
 
 if (require.main === module) {
-  watch(process.argv[2], (fileName) => {
+  watch(process.argv[2], fileName => {
     console.log(`${fileName}`)
   })
 }

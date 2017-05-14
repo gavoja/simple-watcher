@@ -24,7 +24,7 @@ const watch = require('simple-watcher')
  * @param {number} tolerance - Interval in which multiple changes to the same file
  *                             on Windows will be treated as one; default is 200ms.
  */
-watch('/path/to/directory', (filePath) => {
+watch('/path/to/directory', filePath => {
   console.log(`Changed: ${filePath}`)
 })
 ```
