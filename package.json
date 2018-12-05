@@ -1,8 +1,11 @@
 {
   "name": "simple-watcher",
-  "version": "3.1.0",
-  "description": "\"A simple recursive directory watcher.\"",
+  "version": "4.0.0",
+  "description": "\"A simple directory watcher.\"",
   "main": "index.js",
+  "bin": {
+    "simple-watcher": "./bin/simple-watcher"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/gavoja/simple-watcher.git"

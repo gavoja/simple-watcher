@@ -6,30 +6,23 @@ const path = require('path')
 const TOLERANCE = 200
 const PLATFORMS = ['win32', 'darwin']
 
-const DEFAULT_OPTIONS = {
-  tolerance: TOLERANCE,
-  usePolling: false
-}
-
-// OS watcher.
-let watchFolder = (workingDir, recursive, settings, callback) => {
-  let options = { persistent: true, recursive: recursive }
-  let last = { filePath: null, timestamp: 0 }
-
-  let w = fs.watch(workingDir, options, (event, fileName) => {
+// OS directory watcher.
+function watchDir (dirToWatch, options, callback) {
+  const last = {filePath: null, timestamp: 0}
+  const w = fs.watch(dirToWatch, {persistent: true, recursive: !options.shallow}, (event, fileName) => {
     // On Windows fileName may actually be empty.
     // In such case assume this is the working dir change.
-    let filePath = fileName ? path.join(workingDir, fileName) : workingDir
+    const filePath = fileName ? path.join(dirToWatch, fileName) : dirToWatch
 
-    if (!settings.tolerance) {
+    if (options.shallow) {
       return callback(filePath)
     }
 
     fs.stat(filePath, (err, stat) => {
       // If error, the file was likely deleted.
-      let timestamp = err ? 0 : (new Date(stat.mtime)).getTime()
-      let ready = err || timestamp - last.timestamp >= settings.tolerance
-      let fileMatches = filePath === last.filePath
+      const timestamp = err ? 0 : (new Date(stat.mtime)).getTime()
+      const ready = err || timestamp - last.timestamp >= options.tolerance
+      const fileMatches = filePath === last.filePath
       last.filePath = filePath
       last.timestamp = timestamp
 
@@ -46,94 +39,73 @@ let watchFolder = (workingDir, recursive, settings, callback) => {
   })
 }
 
-let watchFolderFallback = (parent, settings, callback) => {
-  // This code is synchronous to be able to tell when it actually finishes.
-  try {
-    // Skip if not a directory.
-    if (!fs.statSync(parent).isDirectory()) {
-      return
+// Fallback deep watcher.
+function watchDirFallback (dirToWatch, options, callback) {
+  const dirs = [dirToWatch]
+  options.ledger = options.ledger || new Set()
+
+  for (let ii = 0; ii < dirs.length; ++ii) {
+    const dir = dirs[ii]
+    // Append dirs with descendants.
+    if (!options.shallow) {
+      for (const entityName of fs.readdirSync(dir)) {
+        const entityPath = path.resolve(dir, entityName)
+        fs.statSync(entityPath).isDirectory() && dirs.push(entityPath)
+      }
     }
 
-    watchFolder(parent, false, settings, callback)
+    options.ledger.add(dir)
+    watchDir(dir, {shallow: true}, (entityPath) => {
+      fs.stat(entityPath, (err, stat) => {
+        if (err) { // Entity was deleted.
+          options.ledger.delete(entityPath)
+        } else if (stat.isDirectory() && !options.ledger.has(entityPath) && !options.shallow) { // New directory added.
+          watchDirFallback(entityPath, options, callback)
+        }
 
-    // Iterate over list of children.
-    fs.readdirSync(parent).forEach((child) => {
-      child = path.resolve(parent, child)
-      watchFolderFallback(child, settings, callback)
+        callback(entityPath)
+      })
     })
-  } catch (err) {
-    console.error(err)
   }
 }
 
-let watchFile = (filePath, settings, callback) => {
+function watchFile (filePath, callback) {
   fs.watchFile(filePath, (curr, prev) => {
-    const isRemoved = curr.mtime === 0
-    if (isRemoved) {
-      fs.unwatchFile(filePath)
-    } else {
-      const currStamp = (new Date(curr.mtime)).getTime()
-      const prevStamp = (new Date(prev.mtime)).getTime()
-      // Ready if file reappeared or tolerance reached
-      const ready = (curr === prev) || (!settings.tolerance) || (currStamp - prevStamp >= settings.tolerance)
-
-      if (ready) {
-        callback(filePath)
-      }
-    }
+    curr.mtime === 0 && fs.unwatchFile(filePath) // Unwatch if deleted.
+    callback(filePath)
   })
 }
 
-let watch = (watchedDirs, callback, options) => {
-  // Normalize watchedDirs to array if passed a string (polling requires an array with all file paths to be watched).
-  if (!Array.isArray(watchedDirs)) {
-    watchedDirs = [watchedDirs]
-  }
-  watchedDirs = watchedDirs.map(watchedDir => path.resolve(watchedDir))
-  const settings = Object.assign({}, DEFAULT_OPTIONS, options)
+function watch (entitiesToWatch, arg1, arg2) {
+  const callback = arg2 || arg1
+  const options = arg2 ? arg1 : {toleance: TOLERANCE}
+  options.tolerance = process.platform === 'win32' ? (options.tolerance || TOLERANCE) : 0 // Disable tolerance if not on Windows.
+  options.fallback = options.fallback || !PLATFORMS.includes(process.platform)
 
-  // Enable tolerance only for Windows.
-  if (process.platform !== 'win32') {
-    settings.tolerance = 0
-  }
+  entitiesToWatch = entitiesToWatch.constructor === Array ? entitiesToWatch : [entitiesToWatch] // Normalize to array.
+  entitiesToWatch = entitiesToWatch.map(entityToWatch => path.resolve(entityToWatch)) // Resolve directory paths.
 
-  watchedDirs.forEach(watchedDir => {
-    // If polling, use the direct file path.
-    if (settings.usePolling) {
-      return watchFile(watchedDir, settings, callback)
+  for (const entityToWatch of entitiesToWatch) {
+    if (!fs.statSync(entityToWatch).isDirectory()) {
+      watchFile(entityToWatch, callback)
+    } else {
+      options.fallback ? watchDirFallback(entityToWatch, options, callback) : watchDir(entityToWatch, options, callback)
     }
+  }
+}
 
-    // Use recursive flag if natively available.
-    if (PLATFORMS.includes(process.platform)) {
-      return watchFolder(watchedDir, true, settings, callback)
-    }
+watch.main = function () {
+  const args = process.argv.slice(2)
+  const entitiesToWatch = args.filter(a => !a.startsWith('--'))
+  const options = {shallow: args.includes('--shallow'), fallback: args.includes('--fallback')}
 
-    // Attach handlers for each folder recursively.
-    let cache = {}
-    watchFolderFallback(watchedDir, settings, (localPath) => {
-      fs.stat(localPath, (err, stat) => {
-        // Delete cache entry.
-        if (err) {
-          delete cache[localPath]
-          return
-        }
-
-        // Add new handler for new directory and save in cache.
-        if (stat.isDirectory() && !cache[localPath]) {
-          cache[localPath] = true
-          watchFolder(localPath, false, settings, callback)
-        }
-      })
-
-      callback(localPath)
-    })
+  watch(entitiesToWatch, options, fileName => {
+    console.log(`${fileName}`)
   })
 }
 
 if (require.main === module) {
-  watch(process.argv[2], fileName => {
-    console.log(`${fileName}`)
-  })
+  watch.main()
 }
 
 module.exports = watch

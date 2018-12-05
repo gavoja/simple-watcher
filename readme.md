@@ -14,17 +14,29 @@ Features:
 
 ## Usage
 
+### Command line
+
+```
+Usage:
+  simple-watcher path1 [path2 path3 ...] [--shallow]
+```
+
+### JavaScript
+
 ```JavaScript
 const watch = require('simple-watcher')
 
-/**
- * Recursively watches for directory changes.
- * @param {string} workingDir - Directory to watch.
- * @param {function} callback - Triggered on change.
- * @param {number} tolerance - Interval in which multiple changes to the same file
- *                             on Windows will be treated as one; default is 200ms.
- */
-watch('/path/to/directory', filePath => {
+// No frills deep watching over a directory.
+watch('/path/to/foo', filePath => {
+  console.log(`Changed: ${filePath}`)
+})
+
+// Shallow watching over multiple directories.
+watch(['/path/to/foo', '/path/to/bar'], {shallow: true}, filePath => {
   console.log(`Changed: ${filePath}`)
 })
 ```
+
+## Caveats
+
+When watching over files rather than directories, the [`fs.watchFile()`](https://nodejs.org/docs/latest/api/fs.html#fs_fs_watchfile_filename_options_listener) is used. This is to provide a polling fallback in cases where directory watching is problematic (e.g. Docker).
