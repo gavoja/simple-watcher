@@ -3,7 +3,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const TOLERANCE = 200
+const TOLERANCE = 200 // For ReadDirectoryChangesW() double reporting.
 const PLATFORMS = ['win32', 'darwin']
 
 // OS directory watcher.
@@ -69,8 +69,9 @@ function watchDirFallback (dirToWatch, options, callback) {
   }
 }
 
-function watchFile (filePath, callback) {
-  fs.watchFile(filePath, (curr, prev) => {
+function watchFile (filePath, options, callback) {
+  options = options.interval ? {interval: options.interval} : {}
+  fs.watchFile(filePath, options, (curr, prev) => {
     curr.mtime === 0 && fs.unwatchFile(filePath) // Unwatch if deleted.
     callback(filePath)
   })
@@ -87,7 +88,7 @@ function watch (entitiesToWatch, arg1, arg2) {
 
   for (const entityToWatch of entitiesToWatch) {
     if (!fs.statSync(entityToWatch).isDirectory()) {
-      watchFile(entityToWatch, callback)
+      watchFile(entityToWatch, options, callback)
     } else {
       options.fallback ? watchDirFallback(entityToWatch, options, callback) : watchDir(entityToWatch, options, callback)
     }
