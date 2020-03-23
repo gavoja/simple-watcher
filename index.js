@@ -8,15 +8,11 @@ const PLATFORMS = ['win32', 'darwin']
 
 // OS directory watcher.
 function watchDir (dirToWatch, options, callback) {
-  const last = {filePath: null, timestamp: 0}
-  const w = fs.watch(dirToWatch, {persistent: true, recursive: !options.shallow}, (event, fileName) => {
+  const last = { filePath: null, timestamp: 0 }
+  const w = fs.watch(dirToWatch, { persistent: true, recursive: !options.shallow }, (event, fileName) => {
     // On Windows fileName may actually be empty.
     // In such case assume this is the working dir change.
     const filePath = fileName ? path.join(dirToWatch, fileName) : dirToWatch
-
-    if (options.shallow) {
-      return callback(filePath)
-    }
 
     fs.stat(filePath, (err, stat) => {
       // If error, the file was likely deleted.
@@ -55,7 +51,7 @@ function watchDirFallback (dirToWatch, options, callback) {
     }
 
     options.ledger.add(dir)
-    watchDir(dir, {shallow: true}, (entityPath) => {
+    watchDir(dir, { shallow: true }, (entityPath) => {
       fs.stat(entityPath, (err, stat) => {
         if (err) { // Entity was deleted.
           options.ledger.delete(entityPath)
@@ -70,7 +66,7 @@ function watchDirFallback (dirToWatch, options, callback) {
 }
 
 function watchFile (filePath, options, callback) {
-  options = options.interval ? {interval: options.interval} : {}
+  options = options.interval ? { interval: options.interval } : {}
   fs.watchFile(filePath, options, (curr, prev) => {
     curr.mtime === 0 && fs.unwatchFile(filePath) // Unwatch if deleted.
     callback(filePath)
@@ -79,7 +75,7 @@ function watchFile (filePath, options, callback) {
 
 function watch (entitiesToWatch, arg1, arg2) {
   const callback = arg2 || arg1
-  const options = arg2 ? arg1 : {toleance: TOLERANCE}
+  const options = arg2 ? arg1 : { toleance: TOLERANCE }
   options.tolerance = process.platform === 'win32' ? (options.tolerance || TOLERANCE) : 0 // Disable tolerance if not on Windows.
   options.fallback = options.fallback || !PLATFORMS.includes(process.platform)
 
@@ -98,7 +94,7 @@ function watch (entitiesToWatch, arg1, arg2) {
 watch.main = function () {
   const args = process.argv.slice(2)
   const entitiesToWatch = args.filter(a => !a.startsWith('--'))
-  const options = {shallow: args.includes('--shallow'), fallback: args.includes('--fallback')}
+  const options = { shallow: args.includes('--shallow'), fallback: args.includes('--fallback') }
 
   watch(entitiesToWatch, options, fileName => {
     console.log(`${fileName}`)

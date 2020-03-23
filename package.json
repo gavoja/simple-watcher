@@ -1,6 +1,6 @@
 {
   "name": "simple-watcher",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "\"A simple directory watcher.\"",
   "main": "index.js",
   "bin": {
