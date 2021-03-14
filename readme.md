@@ -26,13 +26,18 @@ Usage:
 ```JavaScript
 const watch = require('simple-watcher')
 
-// No frills deep watching over a directory.
+// Watch over file or directory:
 watch('/path/to/foo', filePath => {
   console.log(`Changed: ${filePath}`)
 })
 
-// Shallow watching over multiple directories.
-watch(['/path/to/foo', '/path/to/bar'], {shallow: true}, filePath => {
+// Watch over multiple paths:
+watch(['/path/to/foo', '/path/to/bar'], filePath => {
+  console.log(`Changed: ${filePath}`)
+})
+
+// Shallow watch:
+watch(['/path/to/foo', '/path/to/bar'], { shallow: true }, filePath => {
   console.log(`Changed: ${filePath}`)
 })
 ```
