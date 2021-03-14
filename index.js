@@ -51,7 +51,7 @@ function watchDirFallback (dirToWatch, options, callback) {
     }
 
     options.ledger.add(dir)
-    watchDir(dir, { shallow: true }, (entityPath) => {
+    watchDir(dir, { shallow: true, tolerance: options.tolerance }, (entityPath) => {
       fs.stat(entityPath, (err, stat) => {
         if (err) { // Entity was deleted.
           options.ledger.delete(entityPath)
@@ -75,7 +75,7 @@ function watchFile (filePath, options, callback) {
 
 function watch (entitiesToWatch, arg1, arg2) {
   const callback = arg2 || arg1
-  const options = arg2 ? arg1 : { toleance: TOLERANCE }
+  const options = arg2 ? arg1 : { tolerance: TOLERANCE }
   options.tolerance = process.platform === 'win32' ? (options.tolerance || TOLERANCE) : 0 // Disable tolerance if not on Windows.
   options.fallback = options.fallback || !PLATFORMS.includes(process.platform)
 
