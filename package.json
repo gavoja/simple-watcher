@@ -1,10 +1,18 @@
 {
   "name": "simple-watcher",
-  "version": "4.0.2",
-  "description": "\"A simple directory watcher.\"",
+  "version": "5.0.0",
+  "description": "\"A simple file s watcher.\"",
+  "type": "module",
   "main": "index.js",
   "bin": {
-    "simple-watcher": "./bin/simple-watcher"
+    "simple-watcher": "./bin/simple-watcher.js"
+  },
+  "scripts": {
+    "test": "node ./test/test.js -v",
+    "bin": "node ./bin/simple-watcher.js"
+  },
+  "engines": {
+    "node": ">=14.15.1"
   },
   "repository": {
     "type": "git",
@@ -23,5 +31,9 @@
   "bugs": {
     "url": "https://github.com/gavoja/simple-watcher/issues"
   },
-  "homepage": "https://github.com/gavoja/simple-watcher#readme"
+  "homepage": "https://github.com/gavoja/simple-watcher#readme",
+  "devDependencies": {
+    "fs-extra": "^9.1.0",
+    "triala": "^0.4.0"
+  }
 }
