@@ -11,28 +11,12 @@ const PLATFORMS = ['win32', 'darwin'] // Native recursive support.
 // TODO: Refactor after fsPromises.watch is available in the next LTS version.
 // -----------------------------------------------------------------------------
 
-// AbortController falback.
-export class AbortController {
-  constructor () {
-    this.callbacks = []
-    this.aborted = false
-    this.signal = {
-      aborted: false,
-      onabort: callback => this.callbacks.push(callback),
-      abort: () => {
-        this.callbacks.forEach(cb => cb())
-        this.signal.aborted = true
-      }
-    }
-  }
-}
-
 // Graceful closing.
 function createWatchers (abortSignal) {
   const watchers = {}
 
   // Close all watchers on abort.
-  abortSignal && abortSignal.onabort(() => {
+  abortSignal && abortSignal.addEventListener('abort', () => {
     for (const entityPath of Object.keys(watchers)) {
       close(entityPath)
     }
@@ -45,7 +29,7 @@ function createWatchers (abortSignal) {
   function add (entityPath, w) {
     if (!has(entityPath)) {
       watchers[entityPath] = w
-      w.on('error', err => watchers.close(pathToWatch))
+      w.on('error', () => watchers.close(entityPath))
     }
   }
 
@@ -64,7 +48,7 @@ function createChannel (abortSignal) {
   const messageQueue = []
   const promiseQueue = []
 
-  abortSignal && abortSignal.onabort(() => {
+  abortSignal && abortSignal.addEventListener('abort', () => {
     const nextPromise = promiseQueue.shift()
     nextPromise && nextPromise.resolve()
   })
@@ -164,7 +148,7 @@ function watchFallback (pathToWatch, options, callback) {
   }
 }
 
-export default async function* watch (pathsToWatch, options = {}) {
+export default async function * watch (pathsToWatch, options = {}) {
   // Normalize paths to array.
   pathsToWatch = pathsToWatch.constructor === Array ? pathsToWatch : [pathsToWatch]
 
@@ -173,7 +157,7 @@ export default async function* watch (pathsToWatch, options = {}) {
 
   // Choose the the watch. function.
   options.fallback = options.fallback ?? !PLATFORMS.includes(process.platform)
-  const watchFunction = options.fallback ?  watchFallback : watchNative
+  const watchFunction = options.fallback ? watchFallback : watchNative
 
   // Create watchers registry.
   options.watchers = createWatchers(options.signal)

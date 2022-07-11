@@ -4,7 +4,7 @@ import assert from 'assert'
 import fs from 'fs-extra'
 import path from 'path'
 import test from 'triala'
-import watch, { AbortController } from '../index.js'
+import watch from '../index.js'
 
 // Existing paths.
 const PATH_TO_WATCH = path.normalize('./test/data')
@@ -37,9 +37,8 @@ test('Watcher', class {
   }
 
   async _pause (ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
-
 
   _touch (path) {
     const time = new Date()
@@ -47,12 +46,12 @@ test('Watcher', class {
   }
 
   async _timeout (ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 
   async 'Watch over directory' () {
-    const signal = (new AbortController()).signal
-    const changes = await this._watch(PATH_TO_WATCH, { signal }, async () => {
+    const ac = new AbortController()
+    const changes = await this._watch(PATH_TO_WATCH, { signal: ac.signal }, async () => {
       this._touch(LEVEL1_FILE)
       this._touch(LEVEL1_FILE)
       await this._pause(201)
@@ -62,7 +61,7 @@ test('Watcher', class {
       this._touch(LEVEL2_DIR)
       this._touch(LEVEL3_FILE)
       await this._pause(10)
-      signal.abort()
+      ac.abort()
     })
 
     assert.deepStrictEqual(changes, [
@@ -76,8 +75,8 @@ test('Watcher', class {
   }
 
   async 'Watch over directory (zero tolerance)' () {
-    const signal = (new AbortController()).signal
-    const changes = await this._watch(PATH_TO_WATCH, { signal, tolerance: 0 }, async () => {
+    const ac = new AbortController()
+    const changes = await this._watch(PATH_TO_WATCH, { signal: ac.signal, tolerance: 0 }, async () => {
       this._touch(LEVEL1_FILE)
       this._touch(LEVEL1_FILE)
       this._touch(LEVEL1_DIR)
@@ -85,7 +84,7 @@ test('Watcher', class {
       this._touch(LEVEL2_DIR)
       this._touch(LEVEL3_FILE)
       await this._pause(10)
-      signal.abort()
+      ac.abort()
     })
 
     assert.deepStrictEqual(changes, [
@@ -99,8 +98,8 @@ test('Watcher', class {
   }
 
   async 'Watch over directory (fallback)' () {
-    const signal = (new AbortController()).signal
-    const changes = await this._watch(PATH_TO_WATCH, { signal, fallback: true }, async () => {
+    const ac = new AbortController()
+    const changes = await this._watch(PATH_TO_WATCH, { signal: ac.signal, fallback: true }, async () => {
       await this._pause(10) // Allow for the watchers to apply recursively.
 
       this._touch(LEVEL1_FILE)
@@ -119,7 +118,7 @@ test('Watcher', class {
       fs.createFileSync(LEVEL4_FILE)
 
       await this._pause(10)
-      signal.abort()
+      ac.abort()
     })
 
     assert.deepStrictEqual(changes, [
@@ -134,12 +133,12 @@ test('Watcher', class {
   }
 
   async 'Watch over file' () {
-    const signal = (new AbortController()).signal
-    const changes = await this._watch(LEVEL1_FILE, { signal }, async () => {
+    const ac = new AbortController()
+    const changes = await this._watch(LEVEL1_FILE, { signal: ac.signal }, async () => {
       this._touch(LEVEL1_FILE)
       this._touch(LEVEL1_FILE)
       await this._pause(10)
-      signal.abort()
+      ac.abort()
     })
 
     assert.notStrictEqual(changes, [LEVEL1_FILE])

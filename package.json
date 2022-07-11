@@ -1,6 +1,6 @@
 {
   "name": "simple-watcher",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "\"A simple file s watcher.\"",
   "type": "module",
   "main": "index.js",
@@ -12,7 +12,7 @@
     "bin": "node ./bin/simple-watcher.js"
   },
   "engines": {
-    "node": ">=14.15.1"
+    "node": ">=16.16.0"
   },
   "repository": {
     "type": "git",
@@ -33,7 +33,7 @@
   },
   "homepage": "https://github.com/gavoja/simple-watcher#readme",
   "devDependencies": {
-    "fs-extra": "^9.1.0",
-    "triala": "^0.4.0"
+    "fs-extra": "10.1.0",
+    "triala": "0.4.0"
   }
 }

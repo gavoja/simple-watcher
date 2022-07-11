@@ -25,19 +25,18 @@ Usage:
 ### JavaScript
 
 ```JavaScript
-import watch, { AbortController } from 'simple-watcher'
+import watch from 'simple-watcher'
 
-// The AbortController is available natively since 15.9.0.
+// Optional: abort the watcher after 10 seconds.
 const ac = new AbortController()
-const { signal } = ac
 setTimeout(() => ac.abort(), 10000)
 
 // Watch over file or directory.
-for await (const changedPath of watch('/path/to/foo'), { signal }) {
+for await (const changedPath of watch('/path/to/foo'), { signal: ac.signal }) {
   console.log(`Changed: ${filePath}`)
 }
 
 // Watch over multiple paths.
-for await (const changedPath of watch(['/path/to/bar', '/path/to/baz']), { signal }) {
+for await (const changedPath of watch(['/path/to/bar', '/path/to/baz']), { signal: ac.signal }) {
   console.log(`Changed: ${filePath}`)
 }
