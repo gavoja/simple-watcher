@@ -1,6 +1,6 @@
 {
   "name": "simple-watcher",
-  "version": "6.0.0",
+  "version": "5.0.1",
   "description": "\"A simple deep directory watcher with zero dependencies and built-in deduplication..\"",
   "type": "module",
   "main": "src/watch.js",
@@ -10,7 +10,8 @@
   "scripts": {
     "test": "node ./tests/test.js",
     "bin": "node ./src/simple-watcher.js",
-    "release": "dotenv release-it --"
+    "release": "dotenv release-it",
+    "release:dry": "dotenv release-it --dry-run"
   },
   "engines": {
     "node": ">=22.15.0"
