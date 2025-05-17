@@ -8,7 +8,7 @@
   },
   "github": {
     "release": true,
-    "tokenRef": "GITHUB_TOKEN_TWCSS"
+    "tokenRef": "GITHUB_TOKEN_CUSTOM"
   },
   "npm": {
     "publish": true
