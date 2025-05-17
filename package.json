@@ -1,18 +1,19 @@
 {
   "name": "simple-watcher",
-  "version": "5.0.1",
-  "description": "\"A simple file s watcher.\"",
+  "version": "6.0.0",
+  "description": "\"A simple deep directory watcher with zero dependencies and built-in deduplication..\"",
   "type": "module",
-  "main": "index.js",
+  "main": "src/watch.js",
   "bin": {
     "simple-watcher": "./bin/simple-watcher.js"
   },
   "scripts": {
-    "test": "node ./test/test.js -v",
-    "bin": "node ./bin/simple-watcher.js"
+    "test": "node ./tests/test.js",
+    "bin": "node ./src/simple-watcher.js",
+    "release": "dotenv release-it --"
   },
   "engines": {
-    "node": ">=16.16.0"
+    "node": ">=22.15.0"
   },
   "repository": {
     "type": "git",
@@ -33,7 +34,8 @@
   },
   "homepage": "https://github.com/gavoja/simple-watcher#readme",
   "devDependencies": {
-    "fs-extra": "10.1.0",
-    "triala": "0.4.0"
+    "dotenv": "^16.5.0",
+    "dotenv-cli": "^8.0.0",
+    "release-it": "^19.0.2"
   }
 }
